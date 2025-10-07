@@ -36,6 +36,18 @@ class ProviderFactory:
                 provider_config.image_model,
                 provider_config.provider_settings
             )
+        elif provider_name == 'llava':
+            from .llava_provider import LLaVAImageDescriber
+            return LLaVAImageDescriber(
+                provider_config.image_model,
+                provider_config.provider_settings
+            )
+        elif provider_name == 'falcon':
+            from .falcon_provider import FalconImageDescriber
+            return FalconImageDescriber(
+                provider_config.image_model,
+                provider_config.provider_settings
+            )
         else:
             raise ValueError(f"Unknown provider: {provider_name}")
     
@@ -62,6 +74,18 @@ class ProviderFactory:
                 provider_config.text_model,
                 provider_config.provider_settings
             )
+        elif provider_name == 'llava':
+            from .llava_provider import LLaVATextSummarizer
+            return LLaVATextSummarizer(
+                provider_config.text_model,
+                provider_config.provider_settings
+            )
+        elif provider_name == 'falcon':
+            from .falcon_provider import FalconTextSummarizer
+            return FalconTextSummarizer(
+                provider_config.text_model,
+                provider_config.provider_settings
+            )
         else:
             raise ValueError(f"Unknown provider: {provider_name}")
 
@@ -76,6 +100,10 @@ class ImageSummarizer:
         
         self.config = config
         self.provider_name = config.default_provider
+        
+        # Set provider attributes for backward compatibility
+        self.image_provider = config.default_provider
+        self.text_provider = config.default_provider
         
         # Create provider instances
         self.image_describer = ProviderFactory.create_image_describer(
@@ -154,11 +182,41 @@ class ImageSummarizer:
     
     def get_info(self) -> Dict[str, Any]:
         """Get information about the current configuration."""
-        provider_config = self.config.providers[self.provider_name]
-        
-        return {
-            'provider': self.provider_name,
-            'image_model': provider_config.image_model.model_name,
-            'text_model': provider_config.text_model.model_name,
-            'workflow_settings': self.config.workflow
-        }
+        try:
+            # Use the provider attributes that were referenced in the error
+            image_provider = getattr(self, 'image_provider', self.provider_name)
+            text_provider = getattr(self, 'text_provider', self.provider_name)
+            
+            # Handle case where provider might be None
+            if image_provider is None:
+                image_provider = self.provider_name
+            if text_provider is None:
+                text_provider = self.provider_name
+                
+            image_config = self.config.providers[image_provider]
+            text_config = self.config.providers[text_provider]
+            
+            return {
+                'provider': self.provider_name,
+                'image_provider': image_provider,
+                'text_provider': text_provider,
+                'image_model': image_config.image_model.model_name,
+                'text_model': text_config.text_model.model_name,
+                'workflow_settings': self.config.workflow,
+                'optimization': {
+                    'single_provider': image_provider == text_provider,
+                    'models_shared': image_config.image_model.model_name == text_config.text_model.model_name,
+                    'memory_efficient': image_provider == text_provider and image_config.image_model.model_name == text_config.text_model.model_name
+                }
+            }
+        except (KeyError, AttributeError) as e:
+            # Fallback for any configuration issues
+            return {
+                'provider': getattr(self, 'provider_name', 'unknown'),
+                'image_provider': getattr(self, 'image_provider', 'unknown'),
+                'text_provider': getattr(self, 'text_provider', 'unknown'),
+                'image_model': 'Configuration Error',
+                'text_model': 'Configuration Error',
+                'workflow_settings': getattr(self.config, 'workflow', {}),
+                'error': f"Provider configuration error: {str(e)}"
+            }

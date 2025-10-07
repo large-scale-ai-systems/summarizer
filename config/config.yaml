@@ -1,8 +1,8 @@
 # Image Summarizer Configuration
-# Supports multiple AI providers: Amazon Bedrock, Azure OpenAI, OpenAI
+# Supports multiple AI providers: Amazon Bedrock, Azure OpenAI, OpenAI, LLaVA, Falcon
 
-# Default provider to use (bedrock, azure_openai, openai)
-default_provider: "bedrock"
+# Default provider to use (bedrock, azure_openai, openai, llava, falcon)
+default_provider: "llava"
 
 # Workflow settings
 workflow:
@@ -95,6 +95,69 @@ openai:
   # Text Summarization Model
   text_model:
     model_name: "gpt-4o-mini"
+    max_tokens: 500
+    temperature: 0.3
+    system_prompt: |
+      You are a skilled summarizer. Create a concise summary that:
+      - Captures the key themes and patterns
+      - Highlights the most important elements
+      - Maintains clarity and readability
+      - Provides meaningful insights about the collection
+
+# LLaVA Configuration (Local Hugging Face Model)
+llava:
+  # Model Configuration
+  model_id: "llava-hf/llava-v1.6-mistral-7b-hf"
+  device: "auto"  # auto, cpu, cuda
+  load_in_4bit: true
+  temperature: 0.8
+  
+  # Image Description Model
+  image_model:
+    model_name: "llava-hf/llava-v1.6-mistral-7b-hf"
+    max_tokens: 1000
+    temperature: 0.8
+    system_prompt: |
+      You are an expert image analyst. Describe the image in detail, focusing on:
+      - Main subjects and objects
+      - Scene composition and setting
+      - Colors, lighting, and mood
+      - Any text or notable details
+      Keep your description clear and comprehensive.
+  
+  # Text Summarization Model (uses LLaVA itself for text tasks)
+  text_model:
+    model_name: "llava-hf/llava-v1.6-mistral-7b-hf"  # Same as image model - LLaVA can do both
+    max_tokens: 500
+    temperature: 0.3
+    system_prompt: |
+      You are a skilled summarizer. Create a concise summary that:
+      - Captures the key themes and patterns
+      - Highlights the most important elements
+      - Maintains clarity and readability
+      - Provides meaningful insights about the collection
+
+# Falcon AI Configuration (Local Hugging Face Models)
+falcon:
+  # Model Configuration
+  device: "auto"  # auto, cpu, cuda
+  
+  # Image Description Model (uses BLIP for image captioning)
+  image_model:
+    model_name: "Salesforce/blip-image-captioning-base"
+    max_tokens: 1000
+    temperature: 0.7
+    system_prompt: |
+      You are an expert image analyst. Describe the image in detail, focusing on:
+      - Main subjects and objects
+      - Scene composition and setting
+      - Colors, lighting, and mood
+      - Any text or notable details
+      Keep your description clear and comprehensive.
+  
+  # Text Summarization Model (uses Falconsai/text_summarization)
+  text_model:
+    model_name: "Falconsai/text_summarization"
     max_tokens: 500
     temperature: 0.3
     system_prompt: |

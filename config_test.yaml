@@ -1,0 +1,53 @@
+# Test configuration for requirements validation
+# Using OpenAI as default since it's installed
+
+default_provider: "openai"
+
+# Workflow settings
+workflow:
+  batch_size: 3
+  max_concurrent_requests: 2
+  timeout_seconds: 120
+  retry_attempts: 3
+
+# OpenAI Configuration (for testing - requires API key to work)
+openai:
+  api_key: "${OPENAI_API_KEY}"  # Set via environment variable
+  
+  # Image Description Model
+  image_model:
+    model_name: "gpt-4o"
+    max_tokens: 1000
+    temperature: 0.7
+    system_prompt: |
+      You are an expert image analyst. Describe the image in detail, focusing on:
+      - Main subjects and objects
+      - Scene composition and setting
+      - Colors, lighting, and mood
+      - Any text or notable details
+      Keep your description clear and comprehensive.
+  
+  # Text Summarization Model
+  text_model:
+    model_name: "gpt-4o-mini"
+    max_tokens: 500
+    temperature: 0.3
+    system_prompt: |
+      You are a skilled summarizer. Create a concise summary that:
+      - Captures the key themes and patterns
+      - Highlights the most important elements
+      - Maintains clarity and readability
+      - Provides meaningful insights about the collection
+
+# Output settings
+output:
+  save_individual_descriptions: true
+  save_final_summary: true
+  output_format: "json"  # json, yaml, or txt
+  include_metadata: true
+
+# Logging configuration
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/image_summarizer.log"

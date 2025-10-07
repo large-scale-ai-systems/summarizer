@@ -1,6 +1,6 @@
 # Image Summarizer
 
-A simple and powerful tool for describing and summarizing images using AI. Supports **Amazon Bedrock**, **Azure OpenAI**, and **OpenAI** with a clean, easy-to-use interface.
+A simple and powerful tool for describing and summarizing images using AI. Supports **Amazon Bedrock**, **Azure OpenAI**, **OpenAI**, **LLaVA**, and **Falcon AI (local Hugging Face models)** with a clean, easy-to-use interface.
 
 ## Quick Start
 
@@ -12,16 +12,17 @@ pip install pyyaml
 # Choose your AI provider
 pip install boto3              # For Amazon Bedrock
 pip install openai             # For Azure OpenAI or OpenAI
+pip install torch transformers # For LLaVA (local models)
 pip install flask flask-cors   # For web interface (optional)
 ```
 
 ### Configuration
 1. Edit `config/config.yaml` to choose your AI provider:
 ```yaml
-default_provider: "bedrock"  # or "azure_openai" or "openai"
+default_provider: "llava"  # or "bedrock", "azure_openai", "openai", "falcon"
 ```
 
-2. Set environment variables:
+2. Set environment variables (for cloud providers):
 ```bash
 # Amazon Bedrock
 export AWS_ACCESS_KEY_ID="your-access-key"
@@ -33,6 +34,9 @@ export AZURE_OPENAI_API_KEY="your-api-key"
 
 # OpenAI
 export OPENAI_API_KEY="your-api-key"
+
+# LLaVA (local model) - No API keys needed!
+# Just make sure you have sufficient GPU memory or use CPU mode
 ```
 
 ### Usage
@@ -75,13 +79,15 @@ asyncio.run(main())
 
 ## Features
 
-- **Multi-provider support**: Amazon Bedrock, Azure OpenAI, and OpenAI
+- **Multi-provider support**: Amazon Bedrock, Azure OpenAI, OpenAI, LLaVA, and Falcon AI (local models)
+- **Privacy-first options**: LLaVA and Falcon AI run locally with no API calls or data sharing
 - **Simple configuration**: Single YAML file for all providers  
 - **Multiple interfaces**: CLI, Web API, and Python package
 - **Async processing**: Efficient batch processing of images
 - **Clean architecture**: Abstract interfaces for easy extension
 - **Error handling**: Graceful handling of failed images
 - **Flexible output**: JSON, text, or programmatic access
+- **Cost-effective**: Local models eliminate per-request costs
 
 ## Project Structure
 
@@ -93,7 +99,9 @@ summarizer/
 │   ├── workflow.py            # Main workflow orchestrator
 │   ├── bedrock_provider.py    # Amazon Bedrock integration
 │   ├── azure_provider.py     # Azure OpenAI integration
-│   └── openai_provider.py    # OpenAI integration
+│   ├── openai_provider.py    # OpenAI integration
+│   ├── llava_provider.py     # LLaVA local model integration
+│   └── falcon_provider.py    # Falcon AI local model integration
 ├── config/
 │   └── config.yaml           # Single configuration file
 ├── tests/                  # Test files
@@ -165,6 +173,46 @@ openai:
     model_name: "gpt-4o-mini"
     max_tokens: 500
     temperature: 0.3
+```
+
+### LLaVA (Local Models - No API Keys Required)
+```yaml
+default_provider: "llava"
+
+llava:
+  model_id: "llava-hf/llava-v1.6-mistral-7b-hf"
+  device: "auto"  # auto, cpu, cuda
+  load_in_4bit: true
+  temperature: 0.8
+  
+  image_model:
+    model_name: "llava-hf/llava-v1.6-mistral-7b-hf"
+    max_tokens: 1000
+    temperature: 0.8
+    
+  text_model:
+    model_name: "facebook/bart-large-cnn"
+    max_tokens: 500
+    temperature: 0.3
+```
+
+### Falcon AI (Local Models - No API Keys Required)
+```yaml
+default_provider: "falcon"
+
+falcon:
+  device: "auto"  # auto, cpu, cuda
+  
+  image_model:
+    model_name: "Salesforce/blip-image-captioning-base"
+    max_tokens: 1000
+    temperature: 0.8
+    
+  text_model:
+    model_name: "falcon-7b-instruct"  # Uses FalconAIModelManager
+    max_tokens: 500
+    temperature: 0.3
+```
 
 ## Web Interface
 
@@ -213,7 +261,19 @@ pip install -e build/
 - **PyYAML** (required)
 - **boto3** (for Amazon Bedrock)
 - **openai** (for Azure OpenAI/OpenAI)
+- **torch + transformers** (for LLaVA and Falcon local models)
 - **flask + flask-cors** (for web interface)
+
+### GPU Requirements for LLaVA
+- **Recommended**: NVIDIA GPU with 8GB+ VRAM
+- **Minimum**: 4GB GPU with quantization (4-bit loading)
+- **CPU fallback**: Available but significantly slower
+
+### First-Time Setup for LLaVA
+- **Model download**: ~13GB (automatic on first use)
+- **Storage space**: Ensure 15GB+ free space
+- **Internet**: Required for initial model download
+- **Subsequent runs**: Fully offline operation
 
 ## Supported Image Formats
 
@@ -249,6 +309,18 @@ For issues and questions:
 ### Process Multiple Images
 ```bash
 python cli.py folder/*.jpg folder/*.png --output summary.json
+```
+
+### Using LLaVA (Local Model)
+```bash
+# Process images with local LLaVA model (no API keys needed)
+python cli.py images/*.jpg --provider llava
+
+# Process images with local Falcon AI model (no API keys needed)
+python cli.py images/*.jpg --provider falcon
+
+# First run will download the model (~13GB)
+# Subsequent runs will use cached model
 ```
 
 ### Custom Configuration

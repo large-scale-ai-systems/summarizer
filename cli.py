@@ -55,7 +55,7 @@ async def main():
     
     parser.add_argument(
         '--provider',
-        choices=['bedrock', 'azure_openai', 'openai'],
+        choices=['bedrock', 'azure_openai', 'openai', 'llava', 'falcon'],
         help='Override the default provider from config'
     )
     

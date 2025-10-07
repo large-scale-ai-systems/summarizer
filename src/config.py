@@ -41,6 +41,9 @@ class Config:
     providers: Dict[str, ProviderConfig]
     output: Dict[str, Any]
     logging: Dict[str, Any]
+    # Optional cross-provider configuration
+    image_provider: Optional[str] = None
+    text_provider: Optional[str] = None
 
 
 def expand_env_variables(data: Any) -> Any:
@@ -75,7 +78,7 @@ def load_config(config_path: Optional[str] = None) -> Config:
     # Build provider configurations
     providers = {}
     
-    for provider_name in ['bedrock', 'azure_openai', 'openai']:
+    for provider_name in ['bedrock', 'azure_openai', 'openai', 'llava', 'falcon']:
         if provider_name in raw_config:
             provider_data = raw_config[provider_name]
             
@@ -110,6 +113,32 @@ def load_config(config_path: Optional[str] = None) -> Config:
                     temperature=text_model_data.get('temperature', 0.3),
                     system_prompt=text_model_data.get('system_prompt', '')
                 )
+            elif provider_name == 'llava':
+                image_model = ModelConfig(
+                    model_name=image_model_data.get('model_name', ''),
+                    max_tokens=image_model_data.get('max_tokens', 1000),
+                    temperature=image_model_data.get('temperature', 0.8),
+                    system_prompt=image_model_data.get('system_prompt', '')
+                )
+                text_model = ModelConfig(
+                    model_name=text_model_data.get('model_name', ''),
+                    max_tokens=text_model_data.get('max_tokens', 500),
+                    temperature=text_model_data.get('temperature', 0.3),
+                    system_prompt=text_model_data.get('system_prompt', '')
+                )
+            elif provider_name == 'falcon':
+                image_model = ModelConfig(
+                    model_name=image_model_data.get('model_name', ''),
+                    max_tokens=image_model_data.get('max_tokens', 1000),
+                    temperature=image_model_data.get('temperature', 0.7),
+                    system_prompt=image_model_data.get('system_prompt', '')
+                )
+                text_model = ModelConfig(
+                    model_name=text_model_data.get('model_name', ''),
+                    max_tokens=text_model_data.get('max_tokens', 500),
+                    temperature=text_model_data.get('temperature', 0.3),
+                    system_prompt=text_model_data.get('system_prompt', '')
+                )
             else:  # openai
                 image_model = ModelConfig(
                     model_name=image_model_data.get('model_name', ''),
@@ -130,10 +159,17 @@ def load_config(config_path: Optional[str] = None) -> Config:
                 provider_settings=provider_data  # Remaining settings
             )
     
+    # Get cross-provider configuration if available
+    providers_config = raw_config.get('providers_config', {})
+    image_provider = providers_config.get('image_provider')
+    text_provider = providers_config.get('text_provider')
+    
     return Config(
         default_provider=raw_config.get('default_provider', 'bedrock'),
         workflow=raw_config.get('workflow', {}),
         providers=providers,
         output=raw_config.get('output', {}),
-        logging=raw_config.get('logging', {})
+        logging=raw_config.get('logging', {}),
+        image_provider=image_provider,
+        text_provider=text_provider
     )
